@@ -1,0 +1,52 @@
+UPDATED FEATURE INFORMATION
+===========================
+
+REQUESTED FEATURES (MUST-INCLUDE):
+1. Annual_Mileage ✓
+2. DiffIN_Mileage ✓
+3. Auto_Make ✓
+4. Vehicle_Cost ✓
+
+REMOVED FEATURES:
+1. Hobbies ✓
+
+ALL SELECTED FEATURES:
+ 1. Annual_Mileage ⭐
+ 2. DiffIN_Mileage ⭐
+ 3. Auto_Make ⭐
+ 4. Vehicle_Cost ⭐
+ 5. Claim_ID
+ 6. Accident_Severity
+ 7. Garage_Location
+ 8. Collision_Type
+ 9. authorities_contacted
+10. Commute_Discount
+11. Witnesses
+12. Umbrella_Limit
+13. Policy_State
+14. Num_of_Vehicles_Involved
+15. Acccident_State
+
+ENGINEERED FEATURES:
+1. Claim_Premium_Ratio
+2. Age_Risk_Score
+3. Vehicle_Claim_Ratio
+4. Mileage_Discrepancy_Score
+5. Vehicle_Age_Risk
+
+NORMALIZED FEATURES:
+ 1. Annual_Mileage_normalized
+ 2. DiffIN_Mileage_normalized
+ 3. Auto_Make_normalized
+ 4. Vehicle_Cost_normalized
+ 5. Claim_ID_normalized
+ 6. Accident_Severity_normalized
+ 7. Garage_Location_normalized
+ 8. Collision_Type_normalized
+ 9. authorities_contacted_normalized
+10. Commute_Discount_normalized
+11. Witnesses_normalized
+12. Umbrella_Limit_normalized
+13. Policy_State_normalized
+14. Num_of_Vehicles_Involved_normalized
+15. Acccident_State_normalized

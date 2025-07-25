@@ -1,0 +1,73 @@
+UPDATED AUTO INSURANCE FRAUD DETECTION - PREPROCESSING ANALYSIS REPORT
+===========================================================================
+
+EXECUTIVE SUMMARY
+--------------------
+Updated preprocessing analysis with specifically requested features.
+Analysis conducted on 60000 training records with 53 features.
+ADDED: Annual_Mileage, DiffIN_Mileage, Auto_Make, Vehicle_Cost
+REMOVED: Hobbies
+
+1. REQUESTED FEATURE CHANGES
+------------------------------
+Features specifically requested for inclusion:
+• Annual_Mileage: ✓ Included
+• DiffIN_Mileage: ✓ Included
+• Auto_Make: ✓ Included
+• Vehicle_Cost: ✓ Included
+
+Features removed as requested:
+• Hobbies: ✓ Removed
+
+2. DATA QUALITY ANALYSIS
+-------------------------
+Initial data shape: (60000, 53)
+Final data shape: (60000, 74)
+Duplicates removed: 0
+Columns with missing values: 2
+
+3. UPDATED FEATURE SELECTION
+----------------------------
+Total selected features: 15
+Selection strategy: Must-include requested features + top F-statistic features
+
+Selected features with F-scores:
+ 1. Annual_Mileage            (F-Score: 4.2420) ⭐ (REQUESTED)
+ 2. DiffIN_Mileage            (F-Score: 2.0644) ⭐ (REQUESTED)
+ 3. Auto_Make                 (F-Score: 0.1193) ⭐ (REQUESTED)
+ 4. Vehicle_Cost              (F-Score: 10.5886) ⭐ (REQUESTED)
+ 5. Claim_ID                  (F-Score: nan)
+ 6. Accident_Severity         (F-Score: 11744.9330)
+ 7. Garage_Location           (F-Score: 1360.4753)
+ 8. Collision_Type            (F-Score: 1206.3501)
+ 9. authorities_contacted     (F-Score: 463.0895)
+10. Commute_Discount          (F-Score: 405.4499)
+11. Witnesses                 (F-Score: 287.2292)
+12. Umbrella_Limit            (F-Score: 215.3523)
+13. Policy_State              (F-Score: 191.2990)
+14. Num_of_Vehicles_Involved  (F-Score: 141.0470)
+15. Acccident_State           (F-Score: 140.0714)
+
+4. ENHANCED FEATURE ENGINEERING
+-------------------------------
+Created 5 enhanced features using requested features:
+1. Claim_Premium_Ratio
+2. Age_Risk_Score
+3. Vehicle_Claim_Ratio
+4. Mileage_Discrepancy_Score
+5. Vehicle_Age_Risk
+
+5. BUSINESS RELEVANCE OF REQUESTED FEATURES
+-------------------------------------------
+• Annual_Mileage:
+  Higher mileage may correlate with accident risk and claim frequency
+
+• DiffIN_Mileage:
+  Mileage discrepancies can indicate odometer fraud or misrepresentation
+
+• Auto_Make:
+  Vehicle manufacturer affects repair costs, theft rates, and claim patterns
+
+• Vehicle_Cost:
+  Higher value vehicles may be targets for fraud or have inflated claims
+

@@ -1,0 +1,57 @@
+UPDATED FEATURE ENGINEERING & SELECTION ANALYSIS REPORT
+=======================================================
+
+EXECUTIVE SUMMARY
+-----------------
+Updated feature engineering incorporating your specific requirements.
+Selected 15 features including all requested ones.
+Created 5 new features leveraging requested features.
+
+1. REQUESTED FEATURE INTEGRATION
+---------------------------------
+Successfully integrated requested features:
+✓ Annual_Mileage - Included and prioritized
+✓ DiffIN_Mileage - Included and prioritized
+✓ Auto_Make - Included and prioritized
+✓ Vehicle_Cost - Included and prioritized
+
+Removed features as requested:
+✓ Hobbies - Successfully removed from selection
+
+2. ENHANCED ENGINEERED FEATURES
+-------------------------------
+1. Claim_Premium_Ratio
+   Purpose: Ratio of claim to premium - detects inflated claims
+   Statistics: Mean=11.3825, Std=8.9059
+
+2. Age_Risk_Score
+   Purpose: Age-based risk scoring for demographic patterns
+   Statistics: Mean=0.2033, Std=0.4619
+
+3. Vehicle_Claim_Ratio
+   Purpose: Uses Vehicle_Cost to detect value-based fraud
+   Statistics: Mean=1.2816, Std=1.2228
+
+4. Mileage_Discrepancy_Score
+   Purpose: Uses DiffIN_Mileage and Annual_Mileage to detect odometer fraud
+   Statistics: Mean=0.4927, Std=0.2622
+
+5. Vehicle_Age_Risk
+   Purpose: Vehicle age-based risk assessment for older vehicles
+   Statistics: Mean=0.0000, Std=0.0000
+
+3. FEATURE SELECTION RATIONALE
+------------------------------
+Selection methodology updated to prioritize your requirements:
+• Must-include features: Annual_Mileage, DiffIN_Mileage, Auto_Make, Vehicle_Cost
+• Excluded features: Hobbies (as requested)
+• Remaining slots filled with highest F-statistic features
+• All features validated for business relevance
+
+4. UPDATED RECOMMENDATIONS
+--------------------------
+• Prioritize tree-based models (XGBoost, Random Forest) for Auto_Make categorical handling
+• Use mileage-based features for odometer fraud detection patterns
+• Leverage Vehicle_Cost for high-value fraud identification
+• Apply feature interactions between mileage and vehicle characteristics
+• Monitor engineered features for overfitting with new feature set
