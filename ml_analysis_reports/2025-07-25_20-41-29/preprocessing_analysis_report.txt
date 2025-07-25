@@ -1,0 +1,69 @@
+AUTO INSURANCE FRAUD DETECTION - PREPROCESSING ANALYSIS REPORT
+======================================================================
+
+EXECUTIVE SUMMARY
+--------------------
+This report presents comprehensive preprocessing analysis for auto insurance fraud detection.
+Analysis conducted on 60000 training records with 53 features.
+
+1. DATA QUALITY ANALYSIS
+-------------------------
+Initial data shape: (60000, 53)
+Final data shape: (60000, 73)
+Duplicates removed: 0
+Columns with missing values: 2
+
+2. MISSING VALUE HANDLING
+--------------------------
+Strategy Applied:
+• Dropped columns with >50% missing values
+• Mode imputation for categorical variables
+• KNN imputation for numerical variables
+• Final missing values: 0
+
+3. OUTLIER ANALYSIS
+-------------------
+Outlier detection performed on 23 numerical columns
+Method: IQR-based detection with 1st-99th percentile capping
+Top columns with outliers:
+• Umbrella_Limit: 12454 outliers
+• Low_Mileage_Discount: 11548 outliers
+• Vehicle_Claim: 2643 outliers
+• Property_Claim: 2619 outliers
+• Injury_Claim: 2569 outliers
+• Vehicle_Cost: 1414 outliers
+• Commute_Discount: 1164 outliers
+• Total_Claim: 1017 outliers
+• Policy_Premium: 541 outliers
+• Age_Insured: 218 outliers
+
+4. FEATURE SELECTION
+--------------------
+Selected 15 most important features using F-statistic
+Selected features:
+ 1. Claim_ID                  (F-Score: nan)
+ 2. Accident_Severity         (F-Score: 11744.9330)
+ 3. Garage_Location           (F-Score: 1360.4753)
+ 4. Hobbies                   (F-Score: 1215.7311)
+ 5. Collision_Type            (F-Score: 1206.3501)
+ 6. authorities_contacted     (F-Score: 463.0895)
+ 7. Commute_Discount          (F-Score: 405.4499)
+ 8. Witnesses                 (F-Score: 287.2292)
+ 9. Umbrella_Limit            (F-Score: 215.3523)
+10. Policy_State              (F-Score: 191.2990)
+11. Num_of_Vehicles_Involved  (F-Score: 141.0470)
+12. Acccident_State           (F-Score: 140.0714)
+13. Accident_Type             (F-Score: 139.2636)
+14. Property_Damage           (F-Score: 139.0514)
+15. Accident_Location         (F-Score: 135.9201)
+
+5. CATEGORICAL ENCODING
+-----------------------
+Encoded 17 categorical columns
+Methods used: Label encoding (low cardinality), Frequency encoding (high cardinality)
+
+6. NORMALIZATION
+----------------
+Normalized 15 selected features using StandardScaler
+All normalized features have mean=0 and standard deviation=1
+

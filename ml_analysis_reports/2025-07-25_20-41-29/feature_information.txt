@@ -1,0 +1,43 @@
+FEATURE INFORMATION
+====================
+
+SELECTED FEATURES:
+ 1. Claim_ID
+ 2. Accident_Severity
+ 3. Garage_Location
+ 4. Hobbies
+ 5. Collision_Type
+ 6. authorities_contacted
+ 7. Commute_Discount
+ 8. Witnesses
+ 9. Umbrella_Limit
+10. Policy_State
+11. Num_of_Vehicles_Involved
+12. Acccident_State
+13. Accident_Type
+14. Property_Damage
+15. Accident_Location
+
+ENGINEERED FEATURES:
+1. Claim_Premium_Ratio
+2. Age_Risk_Score
+3. Vehicle_Claim_Ratio
+4. Claim_Complexity_Score
+5. Feature_Interaction
+
+NORMALIZED FEATURES:
+ 1. Claim_ID_normalized
+ 2. Accident_Severity_normalized
+ 3. Garage_Location_normalized
+ 4. Hobbies_normalized
+ 5. Collision_Type_normalized
+ 6. authorities_contacted_normalized
+ 7. Commute_Discount_normalized
+ 8. Witnesses_normalized
+ 9. Umbrella_Limit_normalized
+10. Policy_State_normalized
+11. Num_of_Vehicles_Involved_normalized
+12. Acccident_State_normalized
+13. Accident_Type_normalized
+14. Property_Damage_normalized
+15. Accident_Location_normalized
