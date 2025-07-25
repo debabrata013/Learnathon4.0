@@ -183,23 +183,14 @@ def get_ai_insight(chart_data, chart_type, chart_description):
         - Which data points indicate highest risk?
         - What anomalies or outliers are significant?
 
-        3. BUSINESS IMPLICATIONS:
-        - What does this mean for fraud prevention strategy?
-        - Which areas need immediate attention?
-        - What operational changes are recommended?
-
-        4. ACTIONABLE RECOMMENDATIONS:
-        - Specific steps to reduce fraud based on this data
-        - Resource allocation suggestions
-        - Monitoring and alert recommendations
-
-        5. RISK ASSESSMENT:
+        3. RISK ASSESSMENT:
         - Current risk levels indicated by the data
         - Potential future risks to watch for
         - Early warning indicators
 
         Make your analysis specific to the actual data shown in the graph, not generic fraud detection advice.
         Use the statistical information and data points provided to support your insights.
+        Do not include emojis in your response.
         """
         
         response = model.generate_content(prompt)
@@ -214,7 +205,7 @@ def get_ai_insight(chart_data, chart_type, chart_description):
 def generate_fallback_insight(chart_data, chart_type, chart_description):
     """Generate detailed fallback insights when AI is unavailable"""
     
-    insight = f"## 📊 {chart_type} Analysis\n\n"
+    insight = f"## {chart_type} Analysis\n\n"
     
     # Analyze the data structure
     if isinstance(chart_data, pd.DataFrame) and len(chart_data) > 0:
@@ -228,109 +219,85 @@ def generate_fallback_insight(chart_data, chart_type, chart_description):
                 avg_fraud = chart_data['Fraud_Rate'].mean()
                 
                 insight += f"""
-                ### 🎯 **Graph Interpretation:**
+                ### Graph Interpretation:
                 - This visualization shows fraud rate distribution across different categories
                 - Fraud rates vary significantly from {min_fraud:.2%} to {max_fraud:.2%}
                 - Average fraud rate across all categories is {avg_fraud:.2%}
                 
-                ### 🔍 **Key Findings:**
+                ### Key Findings:
                 - **Highest Risk**: Categories with fraud rates above {(avg_fraud * 1.5):.2%} need immediate attention
                 - **Pattern Analysis**: {len(chart_data[chart_data['Fraud_Rate'] > avg_fraud])} categories show above-average fraud rates
                 - **Risk Distribution**: {'High variance' if chart_data['Fraud_Rate'].std() > 0.05 else 'Relatively consistent'} in fraud rates across categories
                 
-                ### 💼 **Business Impact:**
+                ### Risk Assessment:
                 - Focus investigation resources on high-fraud-rate categories
-                - Implement enhanced monitoring for categories above {avg_fraud:.2%} fraud rate
-                - Potential savings: Targeting top fraud categories could reduce overall fraud by up to {(max_fraud - avg_fraud) * 100:.1f}%
-                
-                ### 🎯 **Actionable Recommendations:**
-                - Deploy additional fraud analysts to highest-risk categories
-                - Implement automated alerts for claims in high-fraud-rate segments
-                - Review and tighten approval processes for top-risk categories
-                - Conduct deep-dive analysis on categories with >30% fraud rates
+                - Monitor categories above {avg_fraud:.2%} fraud rate for unusual activity
+                - Categories with >30% fraud rates require enhanced scrutiny
                 """
         
         elif "monthly" in chart_description.lower() or "time" in chart_description.lower():
             insight += f"""
-            ### 🎯 **Graph Interpretation:**
+            ### Graph Interpretation:
             - This time-series visualization reveals fraud patterns over time
             - Shows temporal trends and seasonal variations in fraud activity
             - Identifies peak fraud periods and potential cyclical patterns
             
-            ### 🔍 **Key Findings:**
+            ### Key Findings:
             - **Trend Analysis**: Data shows {'increasing' if len(chart_data) > 1 else 'stable'} fraud activity over time
             - **Peak Periods**: Certain time periods show elevated fraud activity
             - **Pattern Recognition**: {'Seasonal patterns detected' if len(chart_data) > 6 else 'Limited time range for pattern analysis'}
             
-            ### 💼 **Business Impact:**
+            ### Risk Assessment:
             - Time-based fraud patterns enable predictive resource allocation
             - Peak periods require enhanced monitoring and staffing
             - Historical trends inform future fraud prevention strategies
-            
-            ### 🎯 **Actionable Recommendations:**
-            - Increase fraud detection sensitivity during historically high-fraud periods
-            - Pre-position investigation resources before predicted fraud spikes
-            - Implement time-based risk scoring in fraud detection algorithms
-            - Monitor for unusual deviations from historical patterns
             """
         
         elif "state" in chart_description.lower() or "geographic" in chart_description.lower():
             insight += f"""
-            ### 🎯 **Graph Interpretation:**
+            ### Graph Interpretation:
             - Geographic visualization showing fraud distribution across regions
             - Reveals location-based fraud hotspots and patterns
             - Identifies states/regions requiring targeted fraud prevention
             
-            ### 🔍 **Key Findings:**
+            ### Key Findings:
             - **Geographic Clustering**: Certain regions show concentrated fraud activity
             - **Risk Zones**: {'Multiple high-risk states identified' if len(chart_data) > 10 else 'Limited geographic coverage'}
             - **Regional Variations**: Significant differences in fraud rates across locations
             
-            ### 💼 **Business Impact:**
+            ### Risk Assessment:
             - Geographic fraud patterns enable location-based risk assessment
             - High-fraud regions require specialized investigation teams
             - Regional fraud trends inform market expansion decisions
-            
-            ### 🎯 **Actionable Recommendations:**
-            - Deploy specialized fraud units to highest-risk states
-            - Implement location-based fraud scoring algorithms
-            - Establish partnerships with local law enforcement in high-fraud areas
-            - Review and adjust pricing models for high-risk geographic regions
             """
         
         else:
             # Generic analysis for other chart types
             insight += f"""
-            ### 🎯 **Graph Interpretation:**
+            ### Graph Interpretation:
             - This {chart_type.lower()} provides insights into fraud detection patterns
             - Visualizes key relationships and distributions in the fraud data
             - Reveals important trends and anomalies for investigation
             
-            ### 🔍 **Key Findings:**
+            ### Key Findings:
             - **Data Distribution**: Analysis of {len(chart_data)} data points reveals significant patterns
             - **Risk Indicators**: Multiple factors contribute to fraud probability
             - **Pattern Analysis**: Clear distinctions between fraud and legitimate cases
             
-            ### 💼 **Business Impact:**
+            ### Risk Assessment:
             - Enhanced understanding of fraud patterns improves detection accuracy
             - Data-driven insights enable more effective resource allocation
             - Pattern recognition supports automated fraud detection systems
-            
-            ### 🎯 **Actionable Recommendations:**
-            - Integrate these insights into fraud detection algorithms
-            - Train investigation teams on identified patterns
-            - Implement monitoring systems for key risk indicators
-            - Regular review and update of fraud detection criteria
             """
     
     else:
         insight += """
-        ### 📊 **Analysis Status:**
+        ### Analysis Status:
         - Limited data available for comprehensive analysis
         - Recommend collecting more data points for deeper insights
         - Consider expanding data collection timeframe or scope
         
-        ### 🎯 **General Recommendations:**
+        ### General Recommendations:
         - Implement comprehensive data collection systems
         - Establish baseline metrics for fraud detection
         - Regular monitoring and analysis of fraud patterns
@@ -338,114 +305,10 @@ def generate_fallback_insight(chart_data, chart_type, chart_description):
     
     return insight
 
-def create_fraud_rate_by_state(df):
-    """Create fraud rate by state visualization"""
-    st.subheader("🗺️ Fraud Rate by State")
-    
-    if 'Policy_State' in df.columns and 'Fraud_Ind' in df.columns:
-        # Calculate fraud rate by state
-        state_fraud = df.groupby('Policy_State').agg({
-            'Fraud_Ind': ['count', 'sum']
-        }).round(4)
-        
-        state_fraud.columns = ['Total_Claims', 'Fraud_Claims']
-        state_fraud['Fraud_Rate'] = (state_fraud['Fraud_Claims'] / state_fraud['Total_Claims'] * 100).round(2)
-        state_fraud = state_fraud.reset_index()
-        
-        # Create choropleth map
-        fig = px.choropleth(
-            state_fraud,
-            locations='Policy_State',
-            color='Fraud_Rate',
-            locationmode='USA-states',
-            color_continuous_scale='Reds',
-            title='Fraud Rate by State (%)',
-            labels={'Fraud_Rate': 'Fraud Rate (%)'}
-        )
-        
-        fig.update_layout(
-            geo_scope='usa',
-            title_x=0.5,
-            height=500
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # AI Insight
-        with st.expander("🤖 AI Insights - Fraud Rate by State"):
-            insight = get_ai_insight(state_fraud, "Choropleth Map", "Fraud rate distribution across US states")
-            st.markdown(f'<div class="insight-box">{insight}</div>', unsafe_allow_html=True)
-        
-        return state_fraud
-    else:
-        st.warning("State or fraud indicator data not available")
-        return None
-
-def create_monthly_fraud_trend(df):
-    """Create monthly fraud trend visualization"""
-    st.subheader("📈 Monthly Fraud Trend")
-    
-    if 'Claims_Date' in df.columns and 'Fraud_Ind' in df.columns:
-        # Extract month-year from claims date
-        df['Month_Year'] = df['Claims_Date'].dt.to_period('M')
-        
-        # Calculate monthly fraud statistics
-        monthly_stats = df.groupby('Month_Year').agg({
-            'Fraud_Ind': ['count', 'sum']
-        }).round(4)
-        
-        monthly_stats.columns = ['Total_Claims', 'Fraud_Claims']
-        monthly_stats['Fraud_Rate'] = (monthly_stats['Fraud_Claims'] / monthly_stats['Total_Claims'] * 100).round(2)
-        monthly_stats = monthly_stats.reset_index()
-        monthly_stats['Month_Year_Str'] = monthly_stats['Month_Year'].astype(str)
-        
-        # Create line chart
-        fig = make_subplots(specs=[[{"secondary_y": True}]])
-        
-        # Add fraud claims line
-        fig.add_trace(
-            go.Scatter(
-                x=monthly_stats['Month_Year_Str'],
-                y=monthly_stats['Fraud_Claims'],
-                mode='lines+markers',
-                name='Fraud Claims',
-                line=dict(color='red', width=3)
-            ),
-            secondary_y=False,
-        )
-        
-        # Add fraud rate line
-        fig.add_trace(
-            go.Scatter(
-                x=monthly_stats['Month_Year_Str'],
-                y=monthly_stats['Fraud_Rate'],
-                mode='lines+markers',
-                name='Fraud Rate (%)',
-                line=dict(color='orange', width=3)
-            ),
-            secondary_y=True,
-        )
-        
-        fig.update_xaxes(title_text="Month")
-        fig.update_yaxes(title_text="Number of Fraud Claims", secondary_y=False)
-        fig.update_yaxes(title_text="Fraud Rate (%)", secondary_y=True)
-        fig.update_layout(title_text="Monthly Fraud Trend Analysis", title_x=0.5, height=500)
-        
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # AI Insight
-        with st.expander("🤖 AI Insights - Monthly Fraud Trend"):
-            insight = get_ai_insight(monthly_stats, "Time Series Line Chart", "Monthly fraud trend over time")
-            st.markdown(f'<div class="insight-box">{insight}</div>', unsafe_allow_html=True)
-        
-        return monthly_stats
-    else:
-        st.warning("Date or fraud indicator data not available")
-        return None
 
 def create_claim_cost_analysis(df):
     """Create claim cost analysis visualization"""
-    st.subheader("💰 Total Claim Cost: Fraud vs Non-Fraud")
+    st.subheader("Total Claim Cost: Fraud vs Non-Fraud")
     
     if 'Total_Claim' in df.columns and 'Fraud_Ind' in df.columns:
         # Calculate claim statistics
@@ -478,12 +341,12 @@ def create_claim_cost_analysis(df):
         st.plotly_chart(fig, use_container_width=True)
         
         # Display statistics table
-        st.subheader("📊 Claim Statistics Summary")
+        st.subheader("Claim Statistics Summary")
         st.dataframe(claim_stats[['Fraud_Status', 'Count', 'Total_Amount', 'Mean_Amount', 'Median_Amount']], 
                     use_container_width=True)
         
         # AI Insight
-        with st.expander("🤖 AI Insights - Claim Cost Analysis"):
+        with st.expander("AI Insights - Claim Cost Analysis"):
             insight = get_ai_insight(claim_stats, "Grouped Bar Chart", "Comparison of claim costs between fraud and non-fraud cases")
             st.markdown(f'<div class="insight-box">{insight}</div>', unsafe_allow_html=True)
         
@@ -494,7 +357,7 @@ def create_claim_cost_analysis(df):
 
 def create_vehicle_age_analysis(df):
     """Create vehicle age vs fraud probability analysis"""
-    st.subheader("🚗 Vehicle Age vs Fraud Probability")
+    st.subheader("Vehicle Age vs Fraud Probability")
     
     if 'Auto_Year' in df.columns and 'Fraud_Ind' in df.columns:
         # Calculate vehicle age
@@ -526,7 +389,7 @@ def create_vehicle_age_analysis(df):
         st.plotly_chart(fig, use_container_width=True)
         
         # AI Insight
-        with st.expander("🤖 AI Insights - Vehicle Age Analysis"):
+        with st.expander("AI Insights - Vehicle Age Analysis"):
             insight = get_ai_insight(age_fraud, "Area Chart", "Relationship between vehicle age and fraud probability")
             st.markdown(f'<div class="insight-box">{insight}</div>', unsafe_allow_html=True)
         
@@ -537,7 +400,7 @@ def create_vehicle_age_analysis(df):
 
 def create_accident_hour_analysis(df):
     """Create accident hour vs fraud rate analysis"""
-    st.subheader("🕐 Accident Hour vs Fraud Rate")
+    st.subheader("Accident Hour vs Fraud Rate")
     
     if 'Accident_Hour' in df.columns and 'Fraud_Ind' in df.columns:
         # Group by accident hour
@@ -564,7 +427,7 @@ def create_accident_hour_analysis(df):
         st.plotly_chart(fig, use_container_width=True)
         
         # AI Insight
-        with st.expander("🤖 AI Insights - Accident Hour Analysis"):
+        with st.expander("AI Insights - Accident Hour Analysis"):
             insight = get_ai_insight(hour_fraud, "Bar Chart", "Fraud rate patterns by hour of accident occurrence")
             st.markdown(f'<div class="insight-box">{insight}</div>', unsafe_allow_html=True)
         
@@ -573,71 +436,31 @@ def create_accident_hour_analysis(df):
         st.warning("Accident hour or fraud indicator data not available")
         return None
 
-def create_occupation_analysis(df):
-    """Create occupation-wise fraud distribution"""
-    st.subheader("👔 Occupation-wise Fraud Distribution")
-    
-    if 'Occupation' in df.columns and 'Fraud_Ind' in df.columns:
-        # Group by occupation
-        occ_fraud = df.groupby('Occupation').agg({
-            'Fraud_Ind': ['count', 'sum']
-        }).round(4)
-        
-        occ_fraud.columns = ['Total_Claims', 'Fraud_Claims']
-        occ_fraud['Fraud_Rate'] = (occ_fraud['Fraud_Claims'] / occ_fraud['Total_Claims'] * 100).round(2)
-        occ_fraud = occ_fraud.reset_index()
-        occ_fraud = occ_fraud.sort_values('Fraud_Rate', ascending=True).tail(15)  # Top 15
-        
-        # Create horizontal bar chart
-        fig = px.bar(
-            occ_fraud,
-            x='Fraud_Rate',
-            y='Occupation',
-            orientation='h',
-            title='Top 15 Occupations by Fraud Rate',
-            labels={'Fraud_Rate': 'Fraud Rate (%)', 'Occupation': 'Occupation'},
-            color='Fraud_Rate',
-            color_continuous_scale='Reds'
-        )
-        
-        fig.update_layout(title_x=0.5, height=600)
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # AI Insight
-        with st.expander("🤖 AI Insights - Occupation Analysis"):
-            insight = get_ai_insight(occ_fraud, "Horizontal Bar Chart", "Fraud distribution across different occupations")
-            st.markdown(f'<div class="insight-box">{insight}</div>', unsafe_allow_html=True)
-        
-        return occ_fraud
-    else:
-        st.warning("Occupation or fraud indicator data not available")
-        return None
-
 def main():
     """Main Streamlit application"""
     
-    st.markdown('<h1 class="main-header">🏆 Auto Insurance Fraud Detection Dashboard</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-header">Auto Insurance Fraud Detection Dashboard</h1>', unsafe_allow_html=True)
     
     # About section
-    with st.expander("ℹ️ About This Application", expanded=False):
+    with st.expander("About This Application", expanded=False):
         st.markdown("""
-        ### 🎯 **Professional Fraud Detection System**
+        ### Professional Fraud Detection System
         
         This advanced dashboard leverages **XGBoost machine learning** with **perfect 100% accuracy** to detect auto insurance fraud.
         
-        **🔧 Key Features:**
+        **Key Features:**
         - **AI-Powered Insights**: Gemini 2.0 Flash integration for intelligent analysis
         - **Interactive Visualizations**: 10+ comprehensive charts and maps
         - **Real-time Predictions**: Upload data for instant fraud detection
         - **Professional Analytics**: State-of-the-art fraud detection algorithms
         
-        **📊 Model Performance:**
+        **Model Performance:**
         - **Accuracy**: 100% (Perfect Classification)
         - **Precision**: 100% (No False Positives)
         - **Recall**: 100% (No False Negatives)
         - **F1-Score**: 100% (Perfect Balance)
         
-        **🎯 Business Impact:**
+        **Business Impact:**
         - Zero fraud losses through perfect detection
         - No customer inconvenience from false alarms
         - Maximum ROI with minimal operational overhead
@@ -650,7 +473,7 @@ def main():
         return
     
     # Sidebar filters
-    st.sidebar.header("🔍 Filters")
+    st.sidebar.header("Filters")
     
     # Time range filter
     if 'Claims_Date' in df.columns:
@@ -712,16 +535,6 @@ def main():
     # Create visualizations
     st.markdown("---")
     
-    # Fraud rate by state
-    create_fraud_rate_by_state(df)
-    
-    st.markdown("---")
-    
-    # Monthly fraud trend
-    create_monthly_fraud_trend(df)
-    
-    st.markdown("---")
-    
     # Claim cost analysis
     create_claim_cost_analysis(df)
     
@@ -737,13 +550,8 @@ def main():
     
     st.markdown("---")
     
-    # Occupation analysis
-    create_occupation_analysis(df)
-    
-    st.markdown("---")
-    
     # Prediction section
-    st.header("🔮 Fraud Prediction")
+    st.header("Fraud Prediction")
     
     uploaded_file = st.file_uploader(
         "Upload CSV file for fraud prediction",
@@ -758,7 +566,7 @@ def main():
             st.success(f"✅ File uploaded successfully! {len(upload_df)} records loaded.")
             
             # Display preview
-            st.subheader("📋 Data Preview")
+            st.subheader("Data Preview")
             st.dataframe(upload_df.head(), use_container_width=True)
             
             # Mock prediction (replace with actual model prediction)
@@ -792,7 +600,7 @@ def main():
                         st.metric("High Risk Cases", high_risk)
                     
                     # Display results
-                    st.subheader("📊 Prediction Results")
+                    st.subheader("Prediction Results")
                     st.dataframe(results_df, use_container_width=True)
                     
                     # Download button
