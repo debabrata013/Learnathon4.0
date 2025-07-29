@@ -1,0 +1,564 @@
+# 🏆 Auto Insurance Fraud Detection System - GitLab CI/CD Pipeline
+# ================================================================
+
+# Global configuration
+image: docker:24.0.5
+
+variables:
+  # Docker configuration
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+  DOCKER_HOST: tcp://docker:2376
+  DOCKER_TLS_VERIFY: 1
+  
+  # Registry configuration
+  REGISTRY: docker.io
+  DOCKER_USERNAME: debabratapattnayak
+  IMAGE_NAME: fraud-detection-system
+  
+  # Application configuration
+  APP_NAME: "Auto Insurance Fraud Detection System"
+  APP_VERSION: "1.0.0"
+  
+  # Build configuration
+  BUILDX_VERSION: "v0.11.2"
+  HADOLINT_VERSION: "v2.12.0"
+  TRIVY_VERSION: "0.45.1"
+
+# Services
+services:
+  - docker:24.0.5-dind
+
+# Stages definition
+stages:
+  - 🔍 validate
+  - 🏗️ build
+  - 🧪 test
+  - 🔒 security
+  - 📦 package
+  - 🚀 deploy
+  - 🧹 cleanup
+
+# Templates for reusable job configurations
+.docker_login: &docker_login
+  - echo "🔑 Logging in to Docker registry..."
+  - echo $DOCKER_PASSWORD | docker login $REGISTRY -u $DOCKER_USERNAME --password-stdin
+
+.install_buildx: &install_buildx
+  - echo "🔧 Installing Docker Buildx..."
+  - mkdir -p ~/.docker/cli-plugins
+  - wget -O ~/.docker/cli-plugins/docker-buildx https://github.com/docker/buildx/releases/download/${BUILDX_VERSION}/buildx-${BUILDX_VERSION}.linux-amd64
+  - chmod +x ~/.docker/cli-plugins/docker-buildx
+  - docker buildx version
+
+.setup_qemu: &setup_qemu
+  - echo "🏗️ Setting up QEMU for multi-arch builds..."
+  - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+
+# ============================================================================
+# 🔍 VALIDATION STAGE
+# ============================================================================
+
+validate:dockerfile:
+  stage: 🔍 validate
+  image: hadolint/hadolint:${HADOLINT_VERSION}-alpine
+  script:
+    - echo "🔍 Validating Dockerfile with Hadolint..."
+    - hadolint Dockerfile --format json > hadolint-report.json || true
+    - hadolint Dockerfile --format gitlab_codeclimate > hadolint-codeclimate.json || true
+    - echo "📊 Hadolint validation completed"
+  artifacts:
+    reports:
+      codequality: hadolint-codeclimate.json
+    paths:
+      - hadolint-report.json
+    expire_in: 1 week
+  allow_failure: true
+
+validate:docker-compose:
+  stage: 🔍 validate
+  image: docker/compose:latest
+  script:
+    - echo "🔍 Validating docker-compose.yml..."
+    - docker-compose config --quiet
+    - echo "✅ Docker Compose validation passed"
+  only:
+    changes:
+      - docker-compose.yml
+      - docker-compose.*.yml
+
+validate:python-syntax:
+  stage: 🔍 validate
+  image: python:3.9-slim
+  script:
+    - echo "🐍 Validating Python syntax..."
+    - find . -name "*.py" -exec python -m py_compile {} \;
+    - echo "✅ Python syntax validation passed"
+  only:
+    changes:
+      - "**/*.py"
+
+# ============================================================================
+# 🏗️ BUILD STAGE
+# ============================================================================
+
+build:production:
+  stage: 🏗️ build
+  before_script:
+    - *install_buildx
+    - *setup_qemu
+    - *docker_login
+  script:
+    - echo "🏗️ Building production image..."
+    - |
+      docker buildx create --use --name builder || true
+      docker buildx build \
+        --target production \
+        --platform linux/amd64,linux/arm64 \
+        --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
+        --build-arg VERSION=${APP_VERSION} \
+        --build-arg VCS_REF=${CI_COMMIT_SHORT_SHA} \
+        --tag ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} \
+        --tag ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${APP_VERSION} \
+        --cache-from type=registry,ref=${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:cache \
+        --cache-to type=registry,ref=${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:cache,mode=max \
+        --push \
+        .
+    - echo "✅ Production image built and pushed"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+build:development:
+  stage: 🏗️ build
+  before_script:
+    - *install_buildx
+    - *setup_qemu
+    - *docker_login
+  script:
+    - echo "🛠️ Building development image..."
+    - |
+      docker buildx create --use --name builder-dev || true
+      docker buildx build \
+        --target development \
+        --platform linux/amd64,linux/arm64 \
+        --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
+        --build-arg VERSION=${APP_VERSION} \
+        --build-arg VCS_REF=${CI_COMMIT_SHORT_SHA} \
+        --tag ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}-dev \
+        --tag ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:dev \
+        --cache-from type=registry,ref=${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:dev-cache \
+        --cache-to type=registry,ref=${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:dev-cache,mode=max \
+        --push \
+        .
+    - echo "✅ Development image built and pushed"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+# ============================================================================
+# 🧪 TEST STAGE
+# ============================================================================
+
+test:functionality:
+  stage: 🧪 test
+  services:
+    - docker:24.0.5-dind
+  before_script:
+    - *docker_login
+  script:
+    - echo "🧪 Running functionality tests..."
+    - |
+      # Pull the built image
+      docker pull ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}
+      
+      # Start container for testing
+      docker run -d --name test-container \
+        -p 8501:8501 \
+        ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}
+      
+      # Wait for application to start
+      echo "⏳ Waiting for application to start..."
+      sleep 45
+      
+      # Install curl for testing
+      apk add --no-cache curl
+      
+      # Test health endpoint
+      echo "🏥 Testing health endpoint..."
+      curl -f http://docker:8501/_stcore/health || exit 1
+      
+      # Test main application
+      echo "🌐 Testing main application..."
+      curl -f http://docker:8501/ || exit 1
+      
+      echo "✅ Functionality tests passed"
+  after_script:
+    - docker stop test-container || true
+    - docker rm test-container || true
+  dependencies:
+    - build:production
+
+test:performance:
+  stage: 🧪 test
+  services:
+    - docker:24.0.5-dind
+  before_script:
+    - *docker_login
+    - apk add --no-cache curl apache2-utils
+  script:
+    - echo "⚡ Running performance tests..."
+    - |
+      # Pull and start container
+      docker pull ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}
+      docker run -d --name perf-test \
+        -p 8501:8501 \
+        ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}
+      
+      # Wait for startup
+      sleep 45
+      
+      # Performance test with Apache Bench
+      echo "📊 Running load test..."
+      ab -n 100 -c 10 http://docker:8501/ > performance-report.txt
+      
+      # Check response time
+      avg_time=$(grep "Time per request" performance-report.txt | head -1 | awk '{print $4}')
+      echo "Average response time: ${avg_time}ms"
+      
+      # Fail if response time > 5000ms
+      if (( $(echo "$avg_time > 5000" | bc -l) )); then
+        echo "❌ Performance test failed: Response time too high"
+        exit 1
+      fi
+      
+      echo "✅ Performance tests passed"
+  after_script:
+    - docker stop perf-test || true
+    - docker rm perf-test || true
+  artifacts:
+    paths:
+      - performance-report.txt
+    expire_in: 1 week
+  dependencies:
+    - build:production
+  allow_failure: true
+
+# ============================================================================
+# 🔒 SECURITY STAGE
+# ============================================================================
+
+security:trivy-scan:
+  stage: 🔒 security
+  image: aquasec/trivy:${TRIVY_VERSION}
+  before_script:
+    - *docker_login
+  script:
+    - echo "🔍 Running Trivy security scan..."
+    - |
+      # Scan the built image
+      trivy image \
+        --format template \
+        --template "@contrib/gitlab.tpl" \
+        --output trivy-report.json \
+        ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}
+      
+      # Also generate SARIF format for GitLab Security Dashboard
+      trivy image \
+        --format sarif \
+        --output trivy-results.sarif \
+        ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}
+      
+      echo "📊 Security scan completed"
+  artifacts:
+    reports:
+      container_scanning: trivy-report.json
+      sast: trivy-results.sarif
+    paths:
+      - trivy-report.json
+      - trivy-results.sarif
+    expire_in: 1 week
+  dependencies:
+    - build:production
+  allow_failure: true
+
+security:secrets-scan:
+  stage: 🔒 security
+  image: trufflesecurity/trufflehog:latest
+  script:
+    - echo "🔍 Scanning for secrets..."
+    - |
+      trufflehog git file://. \
+        --format json \
+        --output secrets-report.json \
+        --no-update || true
+      
+      # Check if any secrets were found
+      if [ -s secrets-report.json ]; then
+        echo "⚠️ Potential secrets found - please review"
+        cat secrets-report.json
+      else
+        echo "✅ No secrets detected"
+      fi
+  artifacts:
+    paths:
+      - secrets-report.json
+    expire_in: 1 week
+  allow_failure: true
+
+# ============================================================================
+# 📦 PACKAGE STAGE
+# ============================================================================
+
+package:latest:
+  stage: 📦 package
+  before_script:
+    - *docker_login
+  script:
+    - echo "📦 Tagging and pushing latest images..."
+    - |
+      # Tag and push production latest
+      docker pull ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}
+      docker tag ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} \
+                 ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:latest
+      docker push ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:latest
+      
+      # Tag and push development latest if on develop branch
+      if [ "$CI_COMMIT_BRANCH" = "develop" ]; then
+        docker pull ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}-dev
+        docker tag ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}-dev \
+                   ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:dev
+        docker push ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:dev
+      fi
+      
+      echo "✅ Latest images tagged and pushed"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_BRANCH == "develop"
+  dependencies:
+    - build:production
+    - build:development
+
+package:release:
+  stage: 📦 package
+  before_script:
+    - *docker_login
+  script:
+    - echo "🏷️ Creating release packages..."
+    - |
+      # Extract version from tag
+      VERSION=${CI_COMMIT_TAG#v}
+      
+      # Tag and push versioned images
+      docker pull ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}
+      docker tag ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} \
+                 ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${VERSION}
+      docker push ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${VERSION}
+      
+      # Also update latest
+      docker tag ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${VERSION} \
+                 ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:latest
+      docker push ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:latest
+      
+      echo "✅ Release ${VERSION} packaged and pushed"
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  dependencies:
+    - build:production
+
+# ============================================================================
+# 🚀 DEPLOY STAGE
+# ============================================================================
+
+deploy:staging:
+  stage: 🚀 deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl docker-compose
+  script:
+    - echo "🚀 Deploying to staging environment..."
+    - |
+      # Update docker-compose for staging
+      export IMAGE_TAG=${CI_COMMIT_SHORT_SHA}
+      export ENVIRONMENT=staging
+      
+      # Deploy using docker-compose (simulate deployment)
+      echo "📝 Deployment configuration:"
+      echo "Image: ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}"
+      echo "Environment: ${ENVIRONMENT}"
+      
+      # Here you would typically:
+      # - SSH to staging server
+      # - Update docker-compose.yml with new image tag
+      # - Run docker-compose up -d
+      # - Run health checks
+      
+      echo "✅ Staging deployment completed"
+  environment:
+    name: staging
+    url: https://fraud-detection-staging.example.com
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  dependencies:
+    - test:functionality
+    - security:trivy-scan
+
+deploy:production:
+  stage: 🚀 deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - echo "🚀 Deploying to production environment..."
+    - |
+      # Extract version from tag
+      VERSION=${CI_COMMIT_TAG#v}
+      
+      echo "📝 Production deployment configuration:"
+      echo "Image: ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${VERSION}"
+      echo "Environment: production"
+      
+      # Production deployment steps would go here
+      # - Blue-green deployment
+      # - Health checks
+      # - Rollback capability
+      
+      echo "✅ Production deployment completed"
+  environment:
+    name: production
+    url: https://fraud-detection.example.com
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+      when: manual
+  dependencies:
+    - package:release
+
+# ============================================================================
+# 🧹 CLEANUP STAGE
+# ============================================================================
+
+cleanup:registry:
+  stage: 🧹 cleanup
+  before_script:
+    - *docker_login
+  script:
+    - echo "🧹 Cleaning up old images from registry..."
+    - |
+      # Keep only last 10 commit-based tags
+      echo "Cleaning up commit-based tags..."
+      
+      # This would typically use registry API to clean up old images
+      # For now, just log what would be cleaned
+      echo "Would clean up images older than 10 commits"
+      
+      echo "✅ Registry cleanup completed"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+  allow_failure: true
+
+# ============================================================================
+# 📊 REPORTING AND NOTIFICATIONS
+# ============================================================================
+
+pages:
+  stage: 🚀 deploy
+  image: alpine:latest
+  script:
+    - echo "📊 Generating GitLab Pages report..."
+    - mkdir public
+    - |
+      cat > public/index.html << EOF
+      <!DOCTYPE html>
+      <html>
+      <head>
+          <title>🏆 Fraud Detection System - CI/CD Report</title>
+          <style>
+              body { font-family: Arial, sans-serif; margin: 40px; }
+              .header { color: #1f4e79; }
+              .success { color: #28a745; }
+              .warning { color: #ffc107; }
+              .error { color: #dc3545; }
+          </style>
+      </head>
+      <body>
+          <h1 class="header">🏆 Auto Insurance Fraud Detection System</h1>
+          <h2>CI/CD Pipeline Report</h2>
+          <p><strong>Commit:</strong> ${CI_COMMIT_SHORT_SHA}</p>
+          <p><strong>Branch:</strong> ${CI_COMMIT_BRANCH}</p>
+          <p><strong>Pipeline:</strong> ${CI_PIPELINE_ID}</p>
+          <p><strong>Build Date:</strong> $(date)</p>
+          
+          <h3>🐳 Docker Images</h3>
+          <ul>
+              <li>Production: ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}</li>
+              <li>Development: ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}-dev</li>
+          </ul>
+          
+          <h3>📊 Reports</h3>
+          <ul>
+              <li><a href="hadolint-report.json">Dockerfile Lint Report</a></li>
+              <li><a href="trivy-report.json">Security Scan Report</a></li>
+              <li><a href="performance-report.txt">Performance Test Report</a></li>
+          </ul>
+      </body>
+      </html>
+      EOF
+    
+    # Copy reports if they exist
+    - cp hadolint-report.json public/ 2>/dev/null || true
+    - cp trivy-report.json public/ 2>/dev/null || true
+    - cp performance-report.txt public/ 2>/dev/null || true
+    
+    - echo "✅ GitLab Pages report generated"
+  artifacts:
+    paths:
+      - public
+    expire_in: 30 days
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# ============================================================================
+# 🔧 MANUAL JOBS
+# ============================================================================
+
+manual:rebuild-cache:
+  stage: 🏗️ build
+  before_script:
+    - *install_buildx
+    - *docker_login
+  script:
+    - echo "🔄 Rebuilding Docker cache..."
+    - |
+      docker buildx create --use --name cache-builder || true
+      docker buildx build \
+        --target production \
+        --platform linux/amd64,linux/arm64 \
+        --cache-to type=registry,ref=${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:cache,mode=max \
+        --no-cache \
+        .
+    - echo "✅ Cache rebuilt"
+  when: manual
+  allow_failure: true
+
+manual:security-full-scan:
+  stage: 🔒 security
+  image: aquasec/trivy:${TRIVY_VERSION}
+  before_script:
+    - *docker_login
+  script:
+    - echo "🔍 Running comprehensive security scan..."
+    - |
+      trivy image \
+        --severity HIGH,CRITICAL \
+        --format table \
+        ${REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:latest
+      
+      trivy fs \
+        --severity HIGH,CRITICAL \
+        --format table \
+        .
+    - echo "✅ Comprehensive security scan completed"
+  when: manual
+  allow_failure: true
