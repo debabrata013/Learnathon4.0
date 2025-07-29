@@ -1,0 +1,166 @@
+version: '3.8'
+
+services:
+  # Main Streamlit Dashboard Application
+  fraud-detection-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+      args:
+        BUILD_DATE: ${BUILD_DATE:-}
+        VERSION: ${VERSION:-1.0.0}
+        VCS_REF: ${VCS_REF:-}
+    image: debabratap/fraud-detection-system:latest
+    container_name: fraud-detection-dashboard
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./dataset:/app/dataset:ro
+      - ./ml_analysis_reports:/app/ml_analysis_reports:ro
+      - ./final-model:/app/final-model:ro
+      - ./outputs:/app/outputs
+      - ./logs:/app/logs
+    environment:
+      - PYTHONPATH=/app
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+      - GEMINI_API_KEY=AIzaSyDhOOtfJj77X7pMR3oUTLEQHitM-t7wqCU
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - fraud-detection-network
+
+  # Data Preprocessing Service
+  data-processor:
+    build:
+      context: .
+      dockerfile: Dockerfile.processor
+    container_name: fraud-data-processor
+    volumes:
+      - ./dataset:/app/dataset
+      - ./ml_analysis_reports:/app/ml_analysis_reports
+      - ./outputs:/app/outputs
+      - ./logs:/app/logs
+    environment:
+      - PYTHONPATH=/app
+    command: ["python", "fraud_preprocessing_updated.py"]
+    depends_on:
+      - fraud-detection-app
+    networks:
+      - fraud-detection-network
+    profiles:
+      - preprocessing
+
+  # Model Training Service
+  model-trainer:
+    build:
+      context: .
+      dockerfile: Dockerfile.trainer
+    container_name: fraud-model-trainer
+    volumes:
+      - ./dataset:/app/dataset:ro
+      - ./ml_analysis_reports:/app/ml_analysis_reports:ro
+      - ./final-model:/app/final-model
+      - ./model-test:/app/model-test
+      - ./outputs:/app/outputs
+      - ./logs:/app/logs
+    environment:
+      - PYTHONPATH=/app
+    command: ["python", "final-model/final_xgboost_model.py"]
+    depends_on:
+      - data-processor
+    networks:
+      - fraud-detection-network
+    profiles:
+      - training
+
+  # Jupyter Notebook Service (for development)
+  jupyter-lab:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+      args:
+        BUILD_DATE: ${BUILD_DATE:-}
+        VERSION: ${VERSION:-1.0.0}
+        VCS_REF: ${VCS_REF:-}
+    image: debabratap/fraud-detection-system:dev
+    container_name: fraud-jupyter-lab
+    ports:
+      - "8888:8888"
+    volumes:
+      - .:/app
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - JUPYTER_TOKEN=fraud-detection-2024
+    command: ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root", "--NotebookApp.token=fraud-detection-2024"]
+    networks:
+      - fraud-detection-network
+    profiles:
+      - development
+
+  # Redis for caching (optional)
+  redis-cache:
+    image: redis:7-alpine
+    container_name: fraud-redis-cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - fraud-detection-network
+    profiles:
+      - cache
+
+  # PostgreSQL for data storage (optional)
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: fraud-postgres-db
+    environment:
+      - POSTGRES_DB=fraud_detection
+      - POSTGRES_USER=fraud_user
+      - POSTGRES_PASSWORD=fraud_password_2024
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./sql:/docker-entrypoint-initdb.d
+    networks:
+      - fraud-detection-network
+    profiles:
+      - database
+
+  # Nginx reverse proxy (for production)
+  nginx-proxy:
+    image: nginx:alpine
+    container_name: fraud-nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - fraud-detection-app
+    networks:
+      - fraud-detection-network
+    profiles:
+      - production
+
+networks:
+  fraud-detection-network:
+    driver: bridge
+    name: fraud-detection-network
+
+volumes:
+  redis-data:
+    driver: local
+  postgres-data:
+    driver: local
