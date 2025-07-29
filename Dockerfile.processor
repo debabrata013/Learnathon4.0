@@ -1,0 +1,43 @@
+# Data Preprocessing Service Dockerfile
+FROM python:3.9-slim
+
+# Set working directory
+WORKDIR /app
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    make \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY streamlit-app/requirements.txt /app/requirements.txt
+
+# Install additional packages for data processing
+RUN echo "scipy==1.11.4" >> /app/requirements.txt && \
+    echo "imbalanced-learn==0.11.0" >> /app/requirements.txt && \
+    echo "feature-engine==1.6.2" >> /app/requirements.txt
+
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copy preprocessing scripts
+COPY fraud_preprocessing_updated.py /app/
+COPY comprehensive_fraud_preprocessing.py /app/
+COPY fraud_preprocessing_final.py /app/
+
+# Create necessary directories
+RUN mkdir -p /app/dataset /app/ml_analysis_reports /app/outputs /app/logs
+
+# Set permissions
+RUN chmod +x /app/fraud_preprocessing_updated.py
+
+# Default command
+CMD ["python", "fraud_preprocessing_updated.py"]

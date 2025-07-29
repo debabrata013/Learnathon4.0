@@ -1,0 +1,43 @@
+# Model Training Service Dockerfile
+FROM python:3.9-slim
+
+# Set working directory
+WORKDIR /app
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    make \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY streamlit-app/requirements.txt /app/requirements.txt
+
+# Install additional ML packages
+RUN echo "lightgbm==4.1.0" >> /app/requirements.txt && \
+    echo "catboost==1.2.2" >> /app/requirements.txt && \
+    echo "optuna==3.4.0" >> /app/requirements.txt && \
+    echo "mlflow==2.8.1" >> /app/requirements.txt
+
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copy model training scripts
+COPY final-model/ /app/final-model/
+COPY model-test/ /app/model-test/
+
+# Create necessary directories
+RUN mkdir -p /app/models /app/outputs /app/logs /app/mlruns
+
+# Set permissions
+RUN chmod +x /app/final-model/final_xgboost_model.py
+
+# Default command
+CMD ["python", "final-model/final_xgboost_model.py"]
