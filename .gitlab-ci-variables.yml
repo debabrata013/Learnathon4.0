@@ -1,0 +1,278 @@
+# GitLab CI/CD Variables Configuration Template
+# =============================================
+# 
+# This file contains all the variables you need to set in your GitLab project
+# Go to: Project Settings > CI/CD > Variables
+#
+# 🔒 REQUIRED VARIABLES (Mark as Protected and Masked)
+# ===================================================
+
+# Docker Registry Credentials
+DOCKER_USERNAME:
+  description: "Docker Hub username"
+  value: "debabratapattnayak"
+  protected: false
+  masked: false
+
+DOCKER_PASSWORD:
+  description: "Docker Hub password or access token"
+  value: "your_docker_hub_password_or_token"
+  protected: true
+  masked: true
+
+# Application Configuration
+GEMINI_API_KEY:
+  description: "Google Gemini API key for AI insights"
+  value: "your_gemini_api_key_here"
+  protected: true
+  masked: true
+
+# Database Configuration (if using)
+POSTGRES_PASSWORD:
+  description: "PostgreSQL database password"
+  value: "your_secure_postgres_password"
+  protected: true
+  masked: true
+
+POSTGRES_USER:
+  description: "PostgreSQL database user"
+  value: "fraud_user"
+  protected: false
+  masked: false
+
+# 🌐 DEPLOYMENT VARIABLES
+# =======================
+
+# Staging Environment
+STAGING_SERVER:
+  description: "Staging server hostname or IP"
+  value: "staging.fraud-detection.example.com"
+  protected: false
+  masked: false
+
+STAGING_SSH_KEY:
+  description: "SSH private key for staging deployment"
+  value: "-----BEGIN OPENSSH PRIVATE KEY-----\n...\n-----END OPENSSH PRIVATE KEY-----"
+  protected: true
+  masked: true
+
+STAGING_USER:
+  description: "SSH user for staging deployment"
+  value: "deploy"
+  protected: false
+  masked: false
+
+# Production Environment
+PRODUCTION_SERVER:
+  description: "Production server hostname or IP"
+  value: "fraud-detection.example.com"
+  protected: true
+  masked: false
+
+PRODUCTION_SSH_KEY:
+  description: "SSH private key for production deployment"
+  value: "-----BEGIN OPENSSH PRIVATE KEY-----\n...\n-----END OPENSSH PRIVATE KEY-----"
+  protected: true
+  masked: true
+
+PRODUCTION_USER:
+  description: "SSH user for production deployment"
+  value: "deploy"
+  protected: true
+  masked: false
+
+# 🔐 SECURITY VARIABLES
+# =====================
+
+# Slack/Discord Notifications (Optional)
+SLACK_WEBHOOK_URL:
+  description: "Slack webhook URL for notifications"
+  value: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+  protected: true
+  masked: true
+
+DISCORD_WEBHOOK_URL:
+  description: "Discord webhook URL for notifications"
+  value: "https://discord.com/api/webhooks/YOUR/DISCORD/WEBHOOK"
+  protected: true
+  masked: true
+
+# Monitoring (Optional)
+SENTRY_DSN:
+  description: "Sentry DSN for error tracking"
+  value: "https://your-sentry-dsn@sentry.io/project-id"
+  protected: true
+  masked: true
+
+# 📊 OPTIONAL VARIABLES
+# =====================
+
+# Build Configuration
+BUILD_PARALLEL:
+  description: "Enable parallel builds"
+  value: "true"
+  protected: false
+  masked: false
+
+CACHE_ENABLED:
+  description: "Enable Docker layer caching"
+  value: "true"
+  protected: false
+  masked: false
+
+# Testing Configuration
+RUN_PERFORMANCE_TESTS:
+  description: "Enable performance testing"
+  value: "true"
+  protected: false
+  masked: false
+
+RUN_SECURITY_SCANS:
+  description: "Enable security scanning"
+  value: "true"
+  protected: false
+  masked: false
+
+# Deployment Configuration
+AUTO_DEPLOY_STAGING:
+  description: "Automatically deploy to staging"
+  value: "true"
+  protected: false
+  masked: false
+
+AUTO_DEPLOY_PRODUCTION:
+  description: "Automatically deploy to production (use with caution)"
+  value: "false"
+  protected: false
+  masked: false
+
+# 🏷️ ENVIRONMENT-SPECIFIC VARIABLES
+# ==================================
+
+# Development Environment
+DEV_DATABASE_URL:
+  description: "Development database connection string"
+  value: "postgresql://dev_user:dev_pass@dev-db:5432/fraud_detection_dev"
+  protected: false
+  masked: false
+
+# Staging Environment
+STAGING_DATABASE_URL:
+  description: "Staging database connection string"
+  value: "postgresql://staging_user:staging_pass@staging-db:5432/fraud_detection_staging"
+  protected: true
+  masked: true
+
+# Production Environment
+PRODUCTION_DATABASE_URL:
+  description: "Production database connection string"
+  value: "postgresql://prod_user:prod_pass@prod-db:5432/fraud_detection_prod"
+  protected: true
+  masked: true
+
+# 📧 NOTIFICATION VARIABLES
+# =========================
+
+# Email Notifications
+SMTP_SERVER:
+  description: "SMTP server for email notifications"
+  value: "smtp.gmail.com"
+  protected: false
+  masked: false
+
+SMTP_PORT:
+  description: "SMTP server port"
+  value: "587"
+  protected: false
+  masked: false
+
+SMTP_USERNAME:
+  description: "SMTP username"
+  value: "your-email@gmail.com"
+  protected: false
+  masked: false
+
+SMTP_PASSWORD:
+  description: "SMTP password or app password"
+  value: "your-smtp-password"
+  protected: true
+  masked: true
+
+# Team Notification Emails
+TEAM_EMAIL:
+  description: "Team email for notifications"
+  value: "fraud-detection-team@company.com"
+  protected: false
+  masked: false
+
+DEVOPS_EMAIL:
+  description: "DevOps team email"
+  value: "devops@company.com"
+  protected: false
+  masked: false
+
+# 🔧 ADVANCED CONFIGURATION
+# =========================
+
+# Registry Configuration
+REGISTRY_URL:
+  description: "Docker registry URL"
+  value: "docker.io"
+  protected: false
+  masked: false
+
+# Kubernetes Configuration (if using)
+KUBE_CONFIG:
+  description: "Kubernetes configuration file content"
+  value: "apiVersion: v1\nkind: Config\n..."
+  protected: true
+  masked: true
+
+KUBE_NAMESPACE:
+  description: "Kubernetes namespace"
+  value: "fraud-detection"
+  protected: false
+  masked: false
+
+# AWS Configuration (if using AWS services)
+AWS_ACCESS_KEY_ID:
+  description: "AWS access key ID"
+  value: "AKIAIOSFODNN7EXAMPLE"
+  protected: true
+  masked: true
+
+AWS_SECRET_ACCESS_KEY:
+  description: "AWS secret access key"
+  value: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+  protected: true
+  masked: true
+
+AWS_DEFAULT_REGION:
+  description: "AWS default region"
+  value: "us-east-1"
+  protected: false
+  masked: false
+
+# 📝 INSTRUCTIONS FOR SETTING UP VARIABLES
+# =========================================
+#
+# 1. Go to your GitLab project
+# 2. Navigate to Settings > CI/CD > Variables
+# 3. Click "Add Variable" for each variable above
+# 4. Set the key, value, and appropriate flags (Protected/Masked)
+# 5. Save each variable
+#
+# 🔒 SECURITY BEST PRACTICES:
+# - Mark sensitive variables as "Masked" to hide them in logs
+# - Mark production variables as "Protected" to limit access
+# - Use environment-specific variables for different stages
+# - Regularly rotate passwords and API keys
+# - Use least-privilege access for service accounts
+#
+# 📊 VARIABLE PRECEDENCE (highest to lowest):
+# 1. Trigger variables (manual pipeline runs)
+# 2. Scheduled pipeline variables
+# 3. Project variables
+# 4. Group variables
+# 5. Instance variables
+# 6. Variables defined in .gitlab-ci.yml
